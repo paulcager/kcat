@@ -1,4 +1,6 @@
 // kcat prints all topic messages to stdout. All topics will be printed, except for internal ones (beginning with "__").
+// The Kafka brokers can be specified using the --brokers parameter, the BROKERS environment variable, and defaults
+// to localhost:9092.
 package main
 
 import (
