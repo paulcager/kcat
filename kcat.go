@@ -11,7 +11,6 @@ import (
 	"os/signal"
 	"sort"
 	"strings"
-	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -31,8 +30,6 @@ var (
 	queryTimeout         time.Duration
 	topicRefreshInterval time.Duration
 	prevTopics           []string
-
-	stop int64 // Access atomically, non-zero means stop.
 )
 
 func main() {
@@ -51,9 +48,7 @@ func main() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGPIPE)
 	go func() {
 		<-ch
-		atomic.StoreInt64(&stop, 1)
-		<-ch
-		// A second CTRL-C: exit quickly without bothering to close the consumer.
+		// Exit quickly without bothering to close the consumer.
 		os.Exit(0)
 	}()
 
@@ -79,15 +74,15 @@ func logKafka() error {
 	log.Printf("kcat for brokers %v", brokers)
 
 	config := kafka.ConfigMap{
-		"bootstrap.servers":               brokers,
-		"client.id":                       fmt.Sprintf("%s-%d", "kcat", os.Getpid()),
-		"group.id":                        group,
-		"go.events.channel.enable":        false,
-		"socket.keepalive.enable":         true,
-		"enable.auto.commit":              true,
-		"auto.commit.interval.ms":         1000,
-		"auto.offset.reset":               "latest",
-		"broker.address.family":           "v4",
+		"bootstrap.servers":        brokers,
+		"client.id":                fmt.Sprintf("%s-%d", "kcat", os.Getpid()),
+		"group.id":                 group,
+		"go.events.channel.enable": false,
+		"socket.keepalive.enable":  true,
+		"enable.auto.commit":       true,
+		"auto.commit.interval.ms":  1000,
+		"auto.offset.reset":        "latest",
+		"broker.address.family":    "v4",
 	}
 
 	if kafkaDebug {
@@ -109,7 +104,7 @@ func logKafka() error {
 		return err
 	}
 
-	for atomic.LoadInt64(&stop) == 0 {
+	for {
 		if ev := consumer.Poll(500); ev != nil {
 			switch ev := ev.(type) {
 			case kafka.Error:
