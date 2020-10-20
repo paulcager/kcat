@@ -7,4 +7,4 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y librdkafka-dev li
 COPY *.go ./
 RUN go install -v ./... && sha256sum /go/bin/kcat
 
-CMD /go/bin/kcat
+CMD [ "/go/bin/kcat" ]
